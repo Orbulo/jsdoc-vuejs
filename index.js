@@ -28,14 +28,18 @@ exports.handlers = {
     }
 
     const fullPath = join(e.doclet.meta.path, e.doclet.meta.filename);
-    const componentName = e.doclet.meta.filename.replace(/\.(vue|js)$/, '');
+    const componentName = e.doclet.meta.filename.replace(/\.(vue|js|ts)$/, '');
 
     // The main doclet before `export default {}`
-    if (e.doclet.longname === 'module.exports') {
-      e.doclet.kind = 'module';
+    if (e.doclet.longname.endsWith('module.exports')) {
       e.doclet.name = componentName;
       e.doclet.alias = componentName;
-      e.doclet.longname = `module:${componentName}`;
+      e.doclet.longname = `${e.doclet.memberof || ''}.${componentName}`;
+			e.doclet.meta.code.name = componentName;
+		}
+
+    if (exportDefaultLines[fullPath] != null) {
+      e.doclet.meta.lineno = exportDefaultLines[fullPath];
     }
 
     if (
@@ -47,6 +51,7 @@ exports.handlers = {
 
     // It can be the main doclet before `export default {}`
     // with at least one `@vue-*` tag
+    e.doclet._isVueDoc = true;
     if (e.doclet._isVueDoc) {
       const { template } = config['jsdoc-vuejs'];
       const data = {
@@ -63,7 +68,7 @@ exports.handlers = {
       });
 
       // Remove meta for not rendering source for this doclet
-      delete e.doclet.meta;
+      //delete e.doclet.meta;
     }
 
     // Methods and hooks
@@ -72,7 +77,7 @@ exports.handlers = {
         e.doclet.scope = 'instance';
         e.doclet.memberof = e.doclet.memberof.replace(/\.methods$/, ''); // force method to be displayed
         if (fileIsSingleFileComponent) {
-          e.doclet.meta.lineno += exportDefaultLines[fullPath] - mainDocletLines[fullPath];
+          // e.doclet.meta.lineno += exportDefaultLines[fullPath] - mainDocletLines[fullPath];
         }
       } else {
         e.doclet.memberof = null; // don't include Vue hooks
